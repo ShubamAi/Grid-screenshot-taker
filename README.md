@@ -36,20 +36,7 @@
 
 You can serve the application using any static file web server:
 
-### Option A: Using Python
-```bash
-cd docu-grid-enhancer
-python -m http.server 8000
-```
-Then open `http://localhost:8000` in your web browser.
-
-### Option B: Using Node.js / http-server
-```bash
-npx http-server c:\Users\shubh\OneDrive\Documents\Antigravity\docu-grid-enhancer -p 8080
-```
-Then open `http://localhost:8080` in your web browser.
-
----
+### Download the file and start running it locally or use it live link on Netfily
 
 ## 🔒 Privacy & Security
 All file parsing, PDF rendering, and image pixel processing take place **100% locally inside your web browser**. No files are uploaded to external servers.
