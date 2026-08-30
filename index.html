@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocuGrid Enhancer | Custom Grid Viewer</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- PDF.js CDN for client-side PDF rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+  <!-- Hidden File Input placed outside label to prevent browser event conflicts -->
+  <input type="file" id="file-input" multiple accept="image/*,.pdf,.jpg,.jpeg,.png,.webp,.gif" hidden />
+
+  <div class="app-container">
+    <!-- Header Navbar -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div class="brand-text">
+          <h1>DocuGrid <span class="accent">Viewer</span></h1>
+          <p>Custom Grid PDF & Image Viewer</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-trigger-upload" class="btn btn-primary">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload Files
+        </button>
+
+        <button id="btn-full-view-all" class="btn btn-accent" disabled title="View all uploaded files in full-screen reader view">
+          <i class="fa-solid fa-expand"></i> Full View All Files
+        </button>
+
+        <button id="btn-clear-all" class="btn btn-outline-danger" disabled title="Clear all uploaded files">
+          <i class="fa-solid fa-trash-can"></i> Clear All
+        </button>
+      </div>
+    </header>
+
+    <!-- Toolbar / Custom Grid Controls -->
+    <nav class="toolbar">
+      <div class="toolbar-section layout-controls">
+        <span class="toolbar-label"><i class="fa-solid fa-table-cells"></i> Custom Grid Layout:</span>
+        <div class="custom-grid-bar">
+          <div class="grid-input-unit">
+            <label for="input-rows">Rows:</label>
+            <input type="number" id="input-rows" min="1" max="20" value="3" class="form-control form-control-sm" />
+          </div>
+          <span class="grid-cross">×</span>
+          <div class="grid-input-unit">
+            <label for="input-cols">Columns:</label>
+            <input type="number" id="input-cols" min="1" max="20" value="5" class="form-control form-control-sm" />
+          </div>
+
+          <div class="quick-presets">
+            <button class="chip-sm" data-r="3" data-c="5">3 × 5</button>
+            <button class="chip-sm" data-r="2" data-c="4">2 × 4</button>
+            <button class="chip-sm" data-r="4" data-c="6">4 × 6</button>
+            <button class="chip-sm" data-r="1" data-c="1">1 × 1</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar-section info-summary">
+        <span id="file-counter" class="counter-badge">0 Items</span>
+      </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Empty State / Dropzone -->
+      <div id="dropzone" class="dropzone-area">
+        <div class="dropzone-content">
+          <div class="dropzone-icon">
+            <i class="fa-solid fa-file-pdf"></i>
+            <i class="fa-solid fa-file-image"></i>
+          </div>
+          <h2>Upload JPG, PNG, WEBP, or PDF Files</h2>
+          <p>Drag & drop files anywhere or click below to upload. Single or bulk upload supported.</p>
+          <button id="btn-dropzone-upload" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-folder-open"></i> Select Files
+          </button>
+        </div>
+      </div>
+
+      <!-- File Cards Grid View -->
+      <div id="grid-container" class="grid-container hidden"></div>
+    </main>
+
+    <!-- Full Window Reader View Modal -->
+    <dialog id="lightbox-dialog" class="custom-dialog lightbox-dialog">
+      <div class="lightbox-container">
+        <!-- Lightbox Header -->
+        <header class="lightbox-header">
+          <div class="lightbox-title-group">
+            <i class="fa-solid fa-expand text-accent"></i>
+            <h3 id="lightbox-title">Document Title</h3>
+            <span id="lightbox-badge" class="meta-tag">100%</span>
+          </div>
+
+          <div class="lightbox-toolbar">
+            <!-- Mode Switcher -->
+            <div class="segmented-control lb-mode-selector">
+              <button id="lb-mode-single" class="segmented-btn active"><i class="fa-solid fa-file"></i> Single View</button>
+              <button id="lb-mode-all" class="segmented-btn"><i class="fa-solid fa-border-all"></i> All Files (Seamless)</button>
+            </div>
+
+            <!-- Full View Grid Column Options (Active in All Files mode) -->
+            <div id="lb-grid-controls" class="lb-grid-controls hidden">
+              <span class="toolbar-label"><i class="fa-solid fa-table-cells"></i> Grid:</span>
+              <button class="chip-sm lb-grid-chip" data-cols="1">1 Col</button>
+              <button class="chip-sm lb-grid-chip" data-cols="2">2 Cols</button>
+              <button class="chip-sm lb-grid-chip active" data-cols="3">3 Cols</button>
+              <button class="chip-sm lb-grid-chip" data-cols="4">4 Cols</button>
+              <button class="chip-sm lb-grid-chip" data-cols="5">5 Cols</button>
+            </div>
+
+            <!-- Zoom & Pan Controls -->
+            <div class="zoom-controls">
+              <button id="lb-btn-zoom-out" class="btn-icon" title="Zoom Out (-)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+              <span id="lb-zoom-level">100%</span>
+              <button id="lb-btn-zoom-in" class="btn-icon" title="Zoom In (+)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+              <button id="lb-btn-zoom-reset" class="btn-icon" title="Reset Zoom"><i class="fa-solid fa-arrows-to-eye"></i></button>
+              <button id="lb-btn-rotate" class="btn-icon" title="Rotate 90°"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+
+            <!-- Item Stepper (Single view mode) -->
+            <div class="lightbox-nav-controls" id="lb-nav-controls-group">
+              <button id="lb-btn-prev" class="btn-icon" title="Previous File"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="lb-page-counter">Item 1 of 1</span>
+              <button id="lb-btn-next" class="btn-icon" title="Next File"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Screenshot & Action Controls -->
+            <div class="lightbox-action-controls">
+              <button id="lb-btn-screenshot" class="btn btn-secondary btn-sm" title="Take a high-res composite screenshot of the current grid view">
+                <i class="fa-solid fa-camera"></i> Screenshot
+              </button>
+
+              <button id="close-lightbox-dialog" class="btn-icon btn-close-lg" aria-label="Close Lightbox">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Lightbox Viewport with Drag/Pan Wrapper -->
+        <div id="lightbox-viewport" class="lightbox-viewport">
+          <div id="lightbox-canvas-wrapper" class="lightbox-canvas-wrapper">
+            <!-- Single Canvas View -->
+            <canvas id="lightbox-canvas"></canvas>
+            <!-- All Files Seamless View -->
+            <div id="lightbox-all-container" class="lightbox-all-container hidden"></div>
+          </div>
+          <div class="viewport-hints">
+            <span><i class="fa-solid fa-computer-mouse"></i> Scroll to Zoom | Click & Drag to Pan | Double-Click to Reset | ← → Keys to Navigate</span>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/pdf-loader.js"></script>
+  <script src="js/lightbox.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
